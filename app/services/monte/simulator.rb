@@ -1,13 +1,16 @@
 module Monte
   # Pure Monte Carlo engine — zero Rails dependencies, seeded, deterministic.
   #
-  # Simulates two plain geometric-Brownian-motion (GBM) paths with independent
-  # draws (uncoupled) and returns summary statistics plus the per-step data the
-  # fan-of-futures chart needs. Common-random-numbers coupling and the DCA /
-  # debt-adjusted behaviors arrive in later slices.
+  # Simulates two GBM-driven paths from structured PathSpecs (each carrying a
+  # behavior — plain / DCA / debt-adjusted), with independent draws per side, and
+  # returns summary statistics plus the per-step data the fan-of-futures chart
+  # needs. Common-random-numbers coupling (feeding both sides the same per-sim
+  # draws) arrives in a later slice; the per-path `normals` seam is already here.
   #
-  #   Monte::Simulator.new(amount: 50_000, horizon: 5, seed: 123)
-  #     .call(path_a: { mu: 0.08, sigma: 0.16 }, path_b: { mu: 0.045, sigma: 0.005 })
+  #   Monte::Simulator.new(amount: 50_000, horizon: 5, seed: 123).call(
+  #     spec_a: Monte::PathSpec.new(mu: 0.08, sigma: 0.16),
+  #     spec_b: Monte::PathSpec.new(mu: 0.045, sigma: 0.005)
+  #   )
   #   # => { median_a:, median_b:, p5_a:, p95_a:, p5_b:, p95_b:, win_rate_a:, steps:,
   #   #      chart: { band_a:, band_b:, sample_a:, sample_b: } }
   #
@@ -28,14 +31,14 @@ module Monte
       @dt = horizon.to_f / @steps
     end
 
-    def call(path_a:, path_b:)
+    def call(spec_a:, spec_b:)
       rng = Random.new(@seed)
       paths_a = Array.new(@n_paths)
       paths_b = Array.new(@n_paths)
 
       @n_paths.times do |i|
-        paths_a[i] = simulate_path(path_a[:mu], path_a[:sigma], rng)
-        paths_b[i] = simulate_path(path_b[:mu], path_b[:sigma], rng)
+        paths_a[i] = simulate_path(spec_a, rng)
+        paths_b[i] = simulate_path(spec_b, rng)
       end
 
       finals_a = paths_a.map(&:last)
@@ -64,25 +67,12 @@ module Monte
 
     private
 
-    # One plain exp-GBM path as the full series [amount, s₁, …, s_steps] so the
-    # fan starts pinned at "Now". A zero-volatility path compounds
-    # deterministically with no sampling (consistent exp form).
-    def simulate_path(mu, sigma, rng)
-      path = Array.new(@steps + 1)
-      path[0] = @amount
-      s = @amount
-      drift = (mu - 0.5 * sigma**2) * @dt
-      diffusion = sigma * Math.sqrt(@dt)
-
-      @steps.times do |t|
-        s *= if sigma.zero?
-          Math.exp(mu * @dt)
-        else
-          Math.exp(drift + diffusion * standard_normal(rng))
-        end
-        path[t + 1] = s
-      end
-      path
+    # One wealth path as the full series [amount, w₁, …, w_steps] so the fan
+    # starts pinned at "Now". Pre-draws the per-step standard normals (none for a
+    # deterministic, zero-σ spec) and lets Monte::Path apply the behavior.
+    def simulate_path(spec, rng)
+      normals = spec.deterministic? ? nil : Array.new(@steps) { standard_normal(rng) }
+      Monte::Path.build(spec: spec, amount: @amount, steps: @steps, dt: @dt, normals: normals)
     end
 
     # Per-step p5/median/p95 envelope across every path, rounded to whole units.

@@ -39,7 +39,7 @@ class Comparison < ApplicationRecord
         mu_b_snapshot: mu_b,
         sigma_b_snapshot: sigma_b,
         data_as_of: Date.current,
-        results_json: run_simulation(amount, horizon, seed_from(key), mu_a, sigma_a, mu_b, sigma_b)
+        results_json: run_simulation(amount, horizon, seed_from(key), spec_for(a, mu_a, sigma_a), spec_for(b, mu_b, sigma_b))
       )
     rescue ActiveRecord::RecordNotUnique
       # Lost a race on dedup_key — the canonical row already exists.
@@ -62,11 +62,21 @@ class Comparison < ApplicationRecord
       key[0, 15].to_i(16)
     end
 
-    def run_simulation(amount, horizon, seed, mu_a, sigma_a, mu_b, sigma_b)
-      Monte::Simulator.new(amount: amount, horizon: horizon, seed: seed, n_paths: N_PATHS).call(
-        path_a: { mu: mu_a, sigma: sigma_a },
-        path_b: { mu: mu_b, sigma: sigma_b }
+    # The behavior + behavior_params come from the (version-controlled, seeded)
+    # ScenarioPath; μ/σ come from the frozen snapshot — never live Asset params.
+    def spec_for(path, mu, sigma)
+      Monte::PathSpec.new(
+        mu: mu,
+        sigma: sigma,
+        behavior: path.behavior.to_sym,
+        behavior_params: path.behavior_params,
+        label: path.label
       )
+    end
+
+    def run_simulation(amount, horizon, seed, spec_a, spec_b)
+      Monte::Simulator.new(amount: amount, horizon: horizon, seed: seed, n_paths: N_PATHS)
+        .call(spec_a: spec_a, spec_b: spec_b)
     end
   end
 
