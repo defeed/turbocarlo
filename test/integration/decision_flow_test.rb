@@ -77,9 +77,10 @@ class DecisionFlowTest < ActionDispatch::IntegrationTest
     refute_equal slug, fresh.slug
   end
 
-  # The special-behavior scenarios run the full flow to a rendered result page.
-  test "the DCA and debt-adjusted scenarios run end-to-end to a result" do
-    %w[lump-vs-dca invest-vs-debt].each do |slug|
+  # Every scenario beyond the walking-skeleton default runs the full flow to a
+  # rendered result page — the DCA/debt behaviors and the three #11 additions.
+  test "the remaining scenarios run end-to-end to a result" do
+    %w[lump-vs-dca invest-vs-debt tech-stock-index stocks-vs-balanced house-vs-invest].each do |slug|
       scenario = Scenario.find_by!(slug: slug)
 
       post scenario_comparisons_path(scenario),

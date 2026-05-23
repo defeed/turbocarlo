@@ -10,9 +10,12 @@ module Monte
 
     def call(scenario, results, amount:)
       case scenario.insight_key
-      when "stocks_vs_cash" then stocks_vs_cash(results, amount)
-      when "lump_vs_dca"    then lump_vs_dca(results)
-      when "invest_vs_debt" then invest_vs_debt(results)
+      when "stocks_vs_cash"          then stocks_vs_cash(results, amount)
+      when "lump_vs_dca"             then lump_vs_dca(results)
+      when "invest_vs_debt"          then invest_vs_debt(results)
+      when "concentrated_vs_index"   then concentrated_vs_index(results, amount)
+      when "stocks_vs_balanced"      then stocks_vs_balanced(results)
+      when "invest_vs_deposit"       then invest_vs_deposit(results)
       else
         raise ArgumentError, "no insight for #{scenario.insight_key.inspect}"
       end
@@ -65,6 +68,59 @@ module Monte
           .plain(" — but in a bad run you'd end near ").money(results[:p5_a], emphasis: :cash)
           .plain(", behind the ").money(results[:median_b], emphasis: :neutral)
           .plain(" that simply clearing the loan locks in.")
+      end
+    end
+
+    def concentrated_vs_index(results, amount)
+      if !a_wins_median?(results)
+        Copy.new
+          .plain("On these numbers the diversified index even wins the typical future, at ")
+          .money(results[:median_b], emphasis: :cash)
+          .plain(" — and without the single stock's tail risk.")
+      elsif results[:p5_a] < amount
+        Copy.new
+          .plain("In the worst 5% of futures the single stock falls to ")
+          .money(results[:p5_a], emphasis: :cash)
+          .plain(" — below the ").money(amount, emphasis: :neutral)
+          .plain(" you put in, and under the index's floor of ").money(results[:p5_b], emphasis: :growth)
+          .plain(". Diversification trades the moonshot for a floor.")
+      else
+        Copy.new
+          .plain("Even a rough run for the single stock holds near ")
+          .money(results[:p5_a], emphasis: :neutral)
+          .plain(", but the index's steadier floor at ").money(results[:p5_b], emphasis: :growth)
+          .plain(" is the point — concentration pays in the median, not the tails.")
+      end
+    end
+
+    def stocks_vs_balanced(results)
+      if a_wins_median?(results)
+        Copy.new
+          .plain("Time is the great smoother: over this horizon the 60/40's cushion mostly washes out. Its typical ")
+          .money(results[:median_b], emphasis: :cash)
+          .plain(" trails all-stocks' ").money(results[:median_a], emphasis: :growth)
+          .plain(" — what's left is simply the balanced mix's lower expected return.")
+      else
+        Copy.new
+          .plain("Here the balanced mix even leads the median, at ")
+          .money(results[:median_b], emphasis: :cash)
+          .plain(" — over a rougher run the bonds earned their keep.")
+      end
+    end
+
+    def invest_vs_deposit(results)
+      if a_wins_median?(results)
+        Copy.new
+          .plain("Investing first typically ends at ").money(results[:median_a], emphasis: :growth)
+          .plain(", ahead of buying now — but in the worst 5% it sinks to ")
+          .money(results[:p5_a], emphasis: :cash)
+          .plain(", and the deposit you need might not be there when you want it. Short horizons are unkind to stocks.")
+      else
+        Copy.new
+          .plain("Locking in now secures the home. Investing first might beat it — its typical future is ")
+          .money(results[:median_a], emphasis: :growth)
+          .plain(" — but in a bad run you'd land near ").money(results[:p5_a], emphasis: :cash)
+          .plain(", possibly too little for the deposit.")
       end
     end
 

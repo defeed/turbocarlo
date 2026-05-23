@@ -4,9 +4,9 @@ module Monte
   class InsightTest < ActiveSupport::TestCase
     Stub = Struct.new(:insight_key)
 
-    def results(median_a:, median_b:, p5_a:, p95_a: 0)
+    def results(median_a:, median_b:, p5_a:, p95_a: 0, p5_b: 0)
       { median_a: median_a, median_b: median_b, p5_a: p5_a, p95_a: p95_a,
-        win_rate_a: 50, p5_b: 0, p95_b: 0, steps: 60, chart: {} }
+        win_rate_a: 50, p5_b: p5_b, p95_b: 0, steps: 60, chart: {} }
     end
 
     def insight(key, amount: 50_000, **result_overrides)
@@ -68,6 +68,64 @@ module Monte
       copy = insight("invest_vs_debt", amount: 20_000, median_a: 40_000, median_b: 27_000, p5_a: 30_000)
       assert_match(/clear the bar set by paying off the debt/, copy.to_s)
       assert_match(/favours keeping the loan/, copy.to_s)
+    end
+
+    # --- concentrated_vs_index ----------------------------------------------
+
+    test "concentrated_vs_index, downside below starting capital: floor framing" do
+      copy = insight("concentrated_vs_index", amount: 80_000,
+        median_a: 240_000, median_b: 165_000, p5_a: 38_000, p5_b: 92_000)
+      assert_match(/worst 5% of futures the single stock falls/, copy.to_s)
+      assert_match(/Diversification trades the moonshot for a floor/, copy.to_s)
+      assert money_segment?(copy, :cash, 38_000)
+      assert money_segment?(copy, :neutral, 80_000)
+      assert money_segment?(copy, :growth, 92_000)
+    end
+
+    test "concentrated_vs_index, downside holds capital: concentration pays in the median" do
+      copy = insight("concentrated_vs_index", amount: 80_000,
+        median_a: 240_000, median_b: 165_000, p5_a: 95_000, p5_b: 92_000)
+      assert_match(/concentration pays in the median, not the tails/, copy.to_s)
+      assert money_segment?(copy, :neutral, 95_000)
+    end
+
+    test "concentrated_vs_index, B wins median (drift): index even wins the typical future" do
+      copy = insight("concentrated_vs_index", amount: 80_000,
+        median_a: 150_000, median_b: 165_000, p5_a: 38_000, p5_b: 92_000)
+      assert_match(/diversified index even wins the typical future/, copy.to_s)
+      assert money_segment?(copy, :cash, 165_000)
+    end
+
+    # --- stocks_vs_balanced -------------------------------------------------
+
+    test "stocks_vs_balanced, A wins median: time-is-the-great-smoother framing" do
+      copy = insight("stocks_vs_balanced", median_a: 700_000, median_b: 540_000, p5_a: 300_000)
+      assert_match(/Time is the great smoother/, copy.to_s)
+      assert money_segment?(copy, :cash, 540_000)
+      assert money_segment?(copy, :growth, 700_000)
+    end
+
+    test "stocks_vs_balanced, B wins median (drift): the balanced mix leads" do
+      copy = insight("stocks_vs_balanced", median_a: 520_000, median_b: 555_000, p5_a: 300_000)
+      assert_match(/balanced mix even leads the median/, copy.to_s)
+      assert money_segment?(copy, :cash, 555_000)
+    end
+
+    # --- invest_vs_deposit --------------------------------------------------
+
+    test "invest_vs_deposit, A wins median: short-horizon danger to the deposit" do
+      copy = insight("invest_vs_deposit", amount: 100_000,
+        median_a: 122_000, median_b: 100_000, p5_a: 78_000)
+      assert_match(/Short horizons are unkind to stocks/, copy.to_s)
+      assert money_segment?(copy, :growth, 122_000)
+      assert money_segment?(copy, :cash, 78_000)
+    end
+
+    test "invest_vs_deposit, B wins median (drift): locking in now secures the home" do
+      copy = insight("invest_vs_deposit", amount: 100_000,
+        median_a: 96_000, median_b: 100_000, p5_a: 70_000)
+      assert_match(/Locking in now secures the home/, copy.to_s)
+      assert money_segment?(copy, :cash, 70_000)
     end
 
     # --- dispatch -----------------------------------------------------------
