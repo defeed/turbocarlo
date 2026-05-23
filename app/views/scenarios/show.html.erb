@@ -1,0 +1,44 @@
+<% content_for :title, @scenario.title %>
+<% path_a = @scenario.path_a %>
+<% path_b = @scenario.path_b %>
+
+<%= link_to "← Back", root_path %>
+
+<h1><%= @scenario.title %></h1>
+
+<% if flash.now[:alert] %>
+  <p role="alert"><%= flash.now[:alert] %></p>
+<% end %>
+
+<%= form_with url: scenario_comparisons_path(@scenario), method: :post do |form| %>
+  <div>
+    <%= form.label :amount, "Amount in play (#{@scenario.currency})" %>
+    <%= form.number_field :amount, value: @scenario.default_amount, min: 1_000, max: 10_000_000, required: true %>
+  </div>
+
+  <fieldset>
+    <legend>The two paths</legend>
+    <div>
+      <span>Path A</span>
+      <strong><%= path_a.label %></strong>
+      <span><%= path_a.meta %></span>
+    </div>
+    <div>
+      <span>Path B</span>
+      <strong><%= path_b.label %></strong>
+      <span><%= path_b.meta %></span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Time horizon</legend>
+    <% @horizons.each do |years| %>
+      <label>
+        <%= form.radio_button :horizon, years, checked: years == @scenario.default_horizon_years %>
+        <%= pluralize(years, "year") %>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <%= form.submit "Run the simulation" %>
+<% end %>

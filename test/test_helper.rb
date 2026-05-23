@@ -10,6 +10,11 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
-    # Add more helper methods to be used by all tests here...
+    # Load the same domain records as db/seeds.rb (idempotent). Used by
+    # DB-backed tests instead of fixtures.
+    def seed_decision_lab!
+      Rails.application.load_seed
+      Scenario.find_by!(slug: "invest-vs-savings")
+    end
   end
 end
