@@ -20,10 +20,37 @@ module Monte
 
     test "returns the full result shape" do
       result = run_sim(seed: 7)
-      assert_equal %i[median_a median_b p5_a p95_a p5_b p95_b win_rate_a steps].sort,
+      assert_equal %i[median_a median_b p5_a p95_a p5_b p95_b win_rate_a steps chart].sort,
         result.keys.sort
       assert_equal 60, result[:steps] # [5 * 12, 120].min
       assert_includes 0..100, result[:win_rate_a]
+    end
+
+    test "chart payload carries per-step bands and a sampled set of whole paths" do
+      result = run_sim(seed: 7)
+      chart = result[:chart]
+      steps = result[:steps]
+
+      # Bands span every step plus the t=0 "Now" point, pinned at the amount.
+      %i[band_a band_b].each do |key|
+        band = chart[key]
+        assert_equal %i[p5 median p95].sort, band.keys.sort
+        band.each_value do |series|
+          assert_equal steps + 1, series.length
+          assert_equal 50_000, series.first # pinned at the start amount
+        end
+      end
+
+      # A small sample of whole paths for the spaghetti, each pinned at "Now".
+      %i[sample_a sample_b].each do |key|
+        sample = chart[key]
+        assert_operator sample.length, :<=, Simulator::SAMPLE_SIZE
+        assert_operator sample.length, :>, Simulator::SAMPLE_SIZE - 5
+        sample.each do |path|
+          assert_equal steps + 1, path.length
+          assert_equal 50_000, path.first
+        end
+      end
     end
 
     test "equity beats cash at the median for these params" do
