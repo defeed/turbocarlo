@@ -1,0 +1,31 @@
+<%# Two p5–p95 bands on one shared scale, with median ticks. Summary-stat only —
+    the full 500-path fan chart lands in #4. %>
+<% min = [ results[:p5_a], results[:p5_b] ].min %>
+<% max = [ results[:p95_a], results[:p95_b] ].max %>
+
+<div class="flex flex-col gap-4">
+  <% [
+       [ :a, scenario.path_a.label, "bg-growth" ],
+       [ :b, scenario.path_b.label, "bg-cash" ]
+     ].each do |role, label, dot| %>
+    <% geo = dist_bar_geometry(results[:"p5_#{role}"], results[:"median_#{role}"], results[:"p95_#{role}"], min, max) %>
+    <div class="flex flex-col gap-1.5">
+      <div class="flex items-center gap-2">
+        <span class="h-[7px] w-[7px] rounded-full <%= dot %>"></span>
+        <span class="text-xs font-semibold text-ink"><%= label %></span>
+        <span class="ml-auto font-mono text-xs font-semibold text-ink"><%= money(results[:"median_#{role}"], currency) %></span>
+      </div>
+      <div class="relative h-3.5 rounded-sm bg-black/[0.025]">
+        <div class="absolute inset-y-0 rounded-[1px] opacity-50 <%= dot %>"
+             style="left: <%= geo[:left] %>%; width: <%= geo[:width] %>%;"></div>
+        <div class="absolute inset-y-0 w-0.5 bg-ink"
+             style="left: <%= geo[:median] %>%;"></div>
+      </div>
+      <div class="flex justify-between font-mono text-[9px] text-ink-3">
+        <span><%= money(results[:"p5_#{role}"], currency) %></span>
+        <span>median</span>
+        <span><%= money(results[:"p95_#{role}"], currency) %></span>
+      </div>
+    </div>
+  <% end %>
+</div>
