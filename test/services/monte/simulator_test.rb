@@ -67,16 +67,61 @@ module Monte
     end
 
     test "lump sum beats dollar-cost averaging on a shared rising market" do
-      # The DCA behavior is wired through the simulator: on a rising market the
-      # lump sum (A, invested from day one) ends ahead of DCA (B, holding cash
-      # early). A zero-σ market makes the comparison deterministic — the noisy
-      # stochastic, common-random-numbers version is exercised in the CRN slice.
+      # The DCA behavior is wired through the simulator: on a deterministic rising
+      # market the lump sum (A, invested from day one) ends ahead of DCA (B, holding
+      # cash early). A zero-σ market makes the comparison exact; the stochastic,
+      # common-random-numbers version is exercised below.
       result = Simulator.new(amount: 50_000, horizon: 5, seed: 7, n_paths: 100).call(
         spec_a: PathSpec.new(mu: 0.06, sigma: 0.0, behavior: :plain),
         spec_b: PathSpec.new(mu: 0.06, sigma: 0.0, behavior: :dca)
       )
       assert_operator result[:median_a], :>, result[:median_b]
       assert_equal 100, result[:win_rate_a]
+    end
+
+    # --- common random numbers (ADR-0001) ------------------------------------
+
+    LUMP = PathSpec.new(mu: 0.08, sigma: 0.16, behavior: :plain, label: "Lump sum")
+    DCA  = PathSpec.new(mu: 0.08, sigma: 0.16, behavior: :dca, label: "Dollar-cost averaging")
+
+    def lump_vs_dca(seed:, coupled:)
+      Simulator.new(amount: 50_000, horizon: 5, seed: seed, n_paths: 500, coupled: coupled)
+        .call(spec_a: LUMP, spec_b: DCA)
+    end
+
+    test "coupled runs are deterministic for a fixed seed" do
+      assert_equal lump_vs_dca(seed: 4242, coupled: true), lump_vs_dca(seed: 4242, coupled: true)
+    end
+
+    test "coupling feeds both sides the same per-simulation market" do
+      # Identical specs on both sides: under coupling they consume the *same*
+      # normals, so the two sides are byte-identical — no path is strictly ahead,
+      # so win_rate is 0 and the chart bands coincide. Independent draws diverge.
+      same = PathSpec.new(mu: 0.08, sigma: 0.16, behavior: :plain)
+
+      coupled = Simulator.new(amount: 50_000, horizon: 5, seed: 7, n_paths: 200, coupled: true)
+        .call(spec_a: same, spec_b: same)
+      assert_equal 0, coupled[:win_rate_a]
+      assert_equal coupled[:median_a], coupled[:median_b]
+      assert_equal coupled[:chart][:band_a], coupled[:chart][:band_b]
+
+      independent = Simulator.new(amount: 50_000, horizon: 5, seed: 7, n_paths: 200, coupled: false)
+        .call(spec_a: same, spec_b: same)
+      refute_equal independent[:chart][:band_a], independent[:chart][:band_b]
+    end
+
+    test "common random numbers make the lump-vs-DCA win rate a real signal" do
+      # On the *same* market path the lump sum (invested from day one) usually
+      # ends ahead of DCA (which sits in cash through year one): coupling yields a
+      # decisive, repeatable win rate well above the 50% coin flip. Independent
+      # draws drown that signal in two unrelated markets — the win rate collapses
+      # toward noise. This is exactly what CRN buys us (ADR-0001).
+      coupled = lump_vs_dca(seed: 7, coupled: true)
+      independent = lump_vs_dca(seed: 7, coupled: false)
+
+      assert_operator coupled[:median_a], :>, coupled[:median_b]
+      assert_operator coupled[:win_rate_a], :>=, 60
+      assert_operator coupled[:win_rate_a], :>, independent[:win_rate_a]
     end
   end
 end

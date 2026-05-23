@@ -39,7 +39,7 @@ class Comparison < ApplicationRecord
         mu_b_snapshot: mu_b,
         sigma_b_snapshot: sigma_b,
         data_as_of: Date.current,
-        results_json: run_simulation(amount, horizon, seed_from(key), spec_for(a, mu_a, sigma_a), spec_for(b, mu_b, sigma_b))
+        results_json: run_simulation(amount, horizon, seed_from(key), spec_for(a, mu_a, sigma_a), spec_for(b, mu_b, sigma_b), scenario.coupled_randomness)
       )
     rescue ActiveRecord::RecordNotUnique
       # Lost a race on dedup_key — the canonical row already exists.
@@ -74,8 +74,11 @@ class Comparison < ApplicationRecord
       )
     end
 
-    def run_simulation(amount, horizon, seed, spec_a, spec_b)
-      Monte::Simulator.new(amount: amount, horizon: horizon, seed: seed, n_paths: N_PATHS)
+    # `coupled` (the scenario's coupled_randomness) drives both paths off the
+    # same per-simulation market when they share an underlying (ADR-0001). It is
+    # structural per-scenario — like behavior — so it does not enter the dedup_key.
+    def run_simulation(amount, horizon, seed, spec_a, spec_b, coupled)
+      Monte::Simulator.new(amount: amount, horizon: horizon, seed: seed, n_paths: N_PATHS, coupled: coupled)
         .call(spec_a: spec_a, spec_b: spec_b)
     end
   end
