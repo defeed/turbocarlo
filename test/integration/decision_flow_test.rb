@@ -30,6 +30,11 @@ class DecisionFlowTest < ActionDispatch::IntegrationTest
 
     # Eyebrow, headline, per-path median + p5/p95, and the snapshot date.
     assert_select "h1", text: /Investing beats cash in \d+% of futures/
+    # The headline carries growth/cash emphasis spans (#5).
+    assert_select "h1 span.text-growth"
+    assert_select "h1 span.text-cash"
+    # The branched insight renders below the chart with its own emphasis.
+    assert_select "p", text: /worst 5% of futures/
     assert_match eyebrow(@currency, 50_000, 5), response.body
     assert_match money(results[:median_a], @currency), response.body
     assert_match money(results[:p5_a], @currency), response.body
