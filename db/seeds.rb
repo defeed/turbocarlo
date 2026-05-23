@@ -52,9 +52,9 @@ scenario.scenario_paths.find_or_create_by!(role: :b) do |p|
   p.behavior = :plain
 end
 
-# Lump sum vs dollar-cost averaging — same market, different timing. Coupled
-# randomness (so the two ride the *same* market path) lands in a later slice;
-# until then the DCA behavior is exercised against independent draws.
+# Lump sum vs dollar-cost averaging — same market, different timing. Both paths
+# ride the *same* S&P, so coupled_randomness drives them off one shared market
+# path per simulation (ADR-0001), making the win rate meaningful.
 lump_vs_dca = Scenario.find_or_create_by!(slug: "lump-vs-dca") do |s|
   s.title = "Lump sum vs dollar-cost averaging"
   s.chip_meta = "€50k · S&P · all now vs over 12mo"
@@ -64,8 +64,11 @@ lump_vs_dca = Scenario.find_or_create_by!(slug: "lump-vs-dca") do |s|
   s.default_amount = 50_000
   s.default_horizon_years = 5
   s.headline_key = "lump_vs_dca"
-  s.coupled_randomness = false
+  s.coupled_randomness = true
 end
+# Enforce the flag on re-seed: find_or_create_by!'s block runs only on create,
+# so an environment seeded before CRN landed keeps coupling switched on.
+lump_vs_dca.update!(coupled_randomness: true) unless lump_vs_dca.coupled_randomness?
 
 lump_vs_dca.scenario_paths.find_or_create_by!(role: :a) do |p|
   p.asset = sp500

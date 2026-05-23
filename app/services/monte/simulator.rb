@@ -2,10 +2,12 @@ module Monte
   # Pure Monte Carlo engine — zero Rails dependencies, seeded, deterministic.
   #
   # Simulates two GBM-driven paths from structured PathSpecs (each carrying a
-  # behavior — plain / DCA / debt-adjusted), with independent draws per side, and
-  # returns summary statistics plus the per-step data the fan-of-futures chart
-  # needs. Common-random-numbers coupling (feeding both sides the same per-sim
-  # draws) arrives in a later slice; the per-path `normals` seam is already here.
+  # behavior — plain / DCA / debt-adjusted) and returns summary statistics plus
+  # the per-step data the fan-of-futures chart needs. Draws are independent per
+  # side by default; when `coupled` (the two paths ride the same underlying, e.g.
+  # lump-sum vs DCA on the same S&P), both sides consume the *same* per-simulation
+  # Z-sequence so the comparison is apples-to-apples (ADR-0001). The win rate is
+  # only meaningful under coupling for same-underlying scenarios.
   #
   #   Monte::Simulator.new(amount: 50_000, horizon: 5, seed: 123).call(
   #     spec_a: Monte::PathSpec.new(mu: 0.08, sigma: 0.16),
@@ -22,11 +24,12 @@ module Monte
     # and median line use the bands (computed from all paths), not this sample.
     SAMPLE_SIZE = 40
 
-    def initialize(amount:, horizon:, seed:, n_paths: 500)
+    def initialize(amount:, horizon:, seed:, n_paths: 500, coupled: false)
       @amount = amount.to_f
       @horizon = horizon
       @seed = seed
       @n_paths = n_paths
+      @coupled = coupled
       @steps = [ horizon * 12, 120 ].min
       @dt = horizon.to_f / @steps
     end
@@ -37,8 +40,17 @@ module Monte
       paths_b = Array.new(@n_paths)
 
       @n_paths.times do |i|
-        paths_a[i] = simulate_path(spec_a, rng)
-        paths_b[i] = simulate_path(spec_b, rng)
+        if @coupled
+          # Both sides ride the same per-simulation market (ADR-0001): one shared
+          # Z-sequence, independent across simulations. A deterministic (σ=0) spec
+          # ignores the supplied normals in Monte::Path.
+          normals = draw_normals(rng)
+          paths_a[i] = build_path(spec_a, normals)
+          paths_b[i] = build_path(spec_b, normals)
+        else
+          paths_a[i] = simulate_path(spec_a, rng)
+          paths_b[i] = simulate_path(spec_b, rng)
+        end
       end
 
       finals_a = paths_a.map(&:last)
@@ -68,10 +80,20 @@ module Monte
     private
 
     # One wealth path as the full series [amount, w₁, …, w_steps] so the fan
-    # starts pinned at "Now". Pre-draws the per-step standard normals (none for a
-    # deterministic, zero-σ spec) and lets Monte::Path apply the behavior.
+    # starts pinned at "Now". Draws its own per-step standard normals (none for a
+    # deterministic, zero-σ spec); used for independent (uncoupled) sides.
     def simulate_path(spec, rng)
-      normals = spec.deterministic? ? nil : Array.new(@steps) { standard_normal(rng) }
+      normals = spec.deterministic? ? nil : draw_normals(rng)
+      build_path(spec, normals)
+    end
+
+    # A fresh per-step Z-sequence off the seeded RNG.
+    def draw_normals(rng)
+      Array.new(@steps) { standard_normal(rng) }
+    end
+
+    # Apply a spec's behavior to a (possibly shared) normals sequence.
+    def build_path(spec, normals)
       Monte::Path.build(spec: spec, amount: @amount, steps: @steps, dt: @dt, normals: normals)
     end
 
