@@ -35,8 +35,12 @@ scenario = Scenario.find_or_create_by!(slug: "invest-vs-savings") do |s|
   s.default_amount = 50_000
   s.default_horizon_years = 5
   s.headline_key = "stocks_vs_cash"
+  s.insight_key = "stocks_vs_cash"
   s.coupled_randomness = false
 end
+# Backfill insight_key on environments seeded before #5 (the block above runs
+# only on create).
+scenario.update!(insight_key: "stocks_vs_cash") if scenario.insight_key.blank?
 
 scenario.scenario_paths.find_or_create_by!(role: :a) do |p|
   p.asset = sp500
@@ -64,11 +68,13 @@ lump_vs_dca = Scenario.find_or_create_by!(slug: "lump-vs-dca") do |s|
   s.default_amount = 50_000
   s.default_horizon_years = 5
   s.headline_key = "lump_vs_dca"
+  s.insight_key = "lump_vs_dca"
   s.coupled_randomness = true
 end
 # Enforce the flag on re-seed: find_or_create_by!'s block runs only on create,
 # so an environment seeded before CRN landed keeps coupling switched on.
 lump_vs_dca.update!(coupled_randomness: true) unless lump_vs_dca.coupled_randomness?
+lump_vs_dca.update!(insight_key: "lump_vs_dca") if lump_vs_dca.insight_key.blank?
 
 lump_vs_dca.scenario_paths.find_or_create_by!(role: :a) do |p|
   p.asset = sp500
@@ -95,8 +101,10 @@ invest_vs_debt = Scenario.find_or_create_by!(slug: "invest-vs-debt") do |s|
   s.default_amount = 20_000
   s.default_horizon_years = 5
   s.headline_key = "invest_vs_debt"
+  s.insight_key = "invest_vs_debt"
   s.coupled_randomness = false
 end
+invest_vs_debt.update!(insight_key: "invest_vs_debt") if invest_vs_debt.insight_key.blank?
 
 invest_vs_debt.scenario_paths.find_or_create_by!(role: :a) do |p|
   p.asset = sp500
