@@ -1,0 +1,16 @@
+<% content_for :title, "Decision Lab" %>
+
+<h1>Decision Lab</h1>
+<p>Pick a financial decision. We run the futures and hand back one sharp result.</p>
+
+<ul>
+  <% @scenarios.each do |scenario| %>
+    <li>
+      <%= link_to scenario_path(scenario) do %>
+        <span><%= scenario.chip_icon %></span>
+        <strong><%= scenario.title %></strong>
+        <span><%= scenario.chip_meta %></span>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

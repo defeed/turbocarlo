@@ -1,0 +1,26 @@
+<% content_for :title, @scenario.title %>
+<% currency = @scenario.currency %>
+
+<p><%= eyebrow(currency, @comparison.amount, @comparison.horizon_years) %></p>
+
+<h1><%= Monte::Headline.call(@scenario, @results) %></h1>
+
+<section>
+  <h2><%= @scenario.path_a.label %></h2>
+  <p>Median: <%= money(@results[:median_a], currency) %></p>
+  <p>Range (p5–p95): <%= money(@results[:p5_a], currency) %> – <%= money(@results[:p95_a], currency) %></p>
+</section>
+
+<section>
+  <h2><%= @scenario.path_b.label %></h2>
+  <p>Median: <%= money(@results[:median_b], currency) %></p>
+  <p>Range (p5–p95): <%= money(@results[:p5_b], currency) %> – <%= money(@results[:p95_b], currency) %></p>
+</section>
+
+<p>Illustrative simulation, not financial advice — based on historical data as of
+   <%= @comparison.data_as_of.to_fs(:long) %>.</p>
+
+<nav>
+  <%= link_to "Tweak", scenario_path(@scenario) %>
+  <%= link_to "Another", root_path %>
+</nav>

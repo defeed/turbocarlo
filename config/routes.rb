@@ -9,6 +9,9 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Decision Lab flow: Entry -> Setup -> run -> Result permalink.
+  root "scenarios#index"
+  get  "/scenarios/:slug",             to: "scenarios#show",     as: :scenario
+  post "/scenarios/:slug/comparisons", to: "comparisons#create", as: :scenario_comparisons
+  get  "/r/:slug",                     to: "results#show",       as: :result
 end
