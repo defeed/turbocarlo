@@ -6,11 +6,15 @@
   <h1 class="font-display text-2xl leading-tight tracking-tight"><%= Monte::Headline.call(@scenario, @results) %></h1>
 </header>
 
-<%# Placeholder for the fan-of-futures chart (#4). Reserves the slot so the layout
-    matches the prototype before the canvas lands. %>
-<div class="flex flex-col gap-2">
-  <div class="grid aspect-[2/1] place-items-center rounded-xl border border-dashed border-rule-strong bg-paper-2/60">
-    <span class="eyebrow text-ink-4">Chart coming soon</span>
+<%# Fan-of-futures chart (#4): per-step bands + sampled spaghetti, drawn from the
+    frozen snapshot by chart_controller.js. %>
+<div class="flex flex-col gap-2"
+     data-controller="chart"
+     data-chart-data-value="<%= @results[:chart].to_json %>"
+     data-chart-amount-value="<%= @comparison.amount %>"
+     data-chart-currency-value="<%= currency %>">
+  <div class="aspect-[2/1] overflow-hidden rounded-xl border border-rule bg-paper-2/60">
+    <canvas data-chart-target="canvas" class="block h-full w-full"></canvas>
   </div>
   <div class="flex justify-between font-mono text-[9px] text-ink-3">
     <span>Now</span>
