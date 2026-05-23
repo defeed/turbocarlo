@@ -69,14 +69,67 @@ module Monte
       refute_match(/comes out ahead/, copy.to_s)
     end
 
+    # --- concentrated_vs_index ----------------------------------------------
+
+    test "concentrated_vs_index, A wins median: single stock wins typical but brutal downside" do
+      copy = headline("concentrated_vs_index", median_a: 240_000, median_b: 165_000, win_rate_a: 58)
+      assert_match(/single stock wins the typical future and leads in 58%/, copy.to_s)
+      assert_match(/worst outcomes are brutal/, copy.to_s)
+      assert emphasised(copy, :growth, "58%")
+      assert emphasised(copy, :cash, "brutal")
+    end
+
+    test "concentrated_vs_index, B wins median (drift): diversifying wins the typical future" do
+      copy = headline("concentrated_vs_index", median_a: 150_000, median_b: 165_000, win_rate_a: 41)
+      assert_match(/Diversifying wins the typical future/, copy.to_s)
+      assert emphasised(copy, :cash, "41%")
+    end
+
+    # --- stocks_vs_balanced -------------------------------------------------
+
+    test "stocks_vs_balanced, A wins median by a wide margin: all-in framing" do
+      copy = headline("stocks_vs_balanced", median_a: 700_000, median_b: 540_000, win_rate_a: 72)
+      assert_match(/going all-in on stocks wins 72% of futures — by a wide margin/, copy.to_s)
+      assert emphasised(copy, :growth, "72%")
+    end
+
+    test "stocks_vs_balanced, A wins median but close: neutral framing" do
+      copy = headline("stocks_vs_balanced", median_a: 560_000, median_b: 555_000, win_rate_a: 52)
+      assert_match(/finish close/, copy.to_s)
+      assert emphasised(copy, :neutral, "52%")
+    end
+
+    test "stocks_vs_balanced, B wins median (drift): balanced mix wins the typical future" do
+      copy = headline("stocks_vs_balanced", median_a: 520_000, median_b: 555_000, win_rate_a: 44)
+      assert_match(/balanced mix wins the typical future/, copy.to_s)
+      assert emphasised(copy, :cash, "44%")
+    end
+
+    # --- invest_vs_deposit --------------------------------------------------
+
+    test "invest_vs_deposit, A wins median: ahead but worst could delay the house" do
+      copy = headline("invest_vs_deposit", median_a: 122_000, median_b: 100_000, win_rate_a: 61)
+      assert_match(/Investing first ends ahead in 61% of futures/, copy.to_s)
+      assert_match(/worst 39% could push your house back/, copy.to_s)
+      assert emphasised(copy, :growth, "61%")
+      assert emphasised(copy, :cash, "39%")
+    end
+
+    test "invest_vs_deposit, B wins median (drift): buying now is the safer call" do
+      copy = headline("invest_vs_deposit", median_a: 96_000, median_b: 100_000, win_rate_a: 43)
+      assert_match(/Buying now is the safer call/, copy.to_s)
+      refute_match(/ends ahead/, copy.to_s)
+    end
+
     # --- invariants ---------------------------------------------------------
 
     # The win-side claims that would contradict the chart if B actually wins the
     # median. "cash comes out ahead" is fine — it's the B-wins phrasing.
-    A_WINS_CLAIMS = /Investing beats cash|ends ahead of spreading|clearing the debt comes out ahead/
+    A_WINS_CLAIMS = /Investing beats cash|ends ahead of spreading|clearing the debt comes out ahead|single stock wins the typical future|going all-in on stocks wins|Investing first ends ahead/
 
     test "no headline claims investing wins when B wins the median" do
-      %w[stocks_vs_cash lump_vs_dca invest_vs_debt].each do |key|
+      %w[stocks_vs_cash lump_vs_dca invest_vs_debt
+         concentrated_vs_index stocks_vs_balanced invest_vs_deposit].each do |key|
         copy = headline(key, median_a: 100, median_b: 200, win_rate_a: 40)
         refute_match(A_WINS_CLAIMS, copy.to_s,
           "#{key} contradicted its chart when B wins the median")

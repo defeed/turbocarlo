@@ -14,9 +14,12 @@ module Monte
 
     def call(scenario, results)
       case scenario.headline_key
-      when "stocks_vs_cash" then stocks_vs_cash(results)
-      when "lump_vs_dca"    then lump_vs_dca(results)
-      when "invest_vs_debt" then invest_vs_debt(results)
+      when "stocks_vs_cash"          then stocks_vs_cash(results)
+      when "lump_vs_dca"             then lump_vs_dca(results)
+      when "invest_vs_debt"          then invest_vs_debt(results)
+      when "concentrated_vs_index"   then concentrated_vs_index(results)
+      when "stocks_vs_balanced"      then stocks_vs_balanced(results)
+      when "invest_vs_deposit"       then invest_vs_deposit(results)
       else
         raise ArgumentError, "no headline for #{scenario.headline_key.inspect}"
       end
@@ -64,6 +67,51 @@ module Monte
       else
         Copy.new
           .plain("Clearing the debt is the surer bet — it wins the typical future, and investing pulls ahead in only ")
+          .growth("#{win}%").plain(" of futures.")
+      end
+    end
+
+    def concentrated_vs_index(results)
+      win = results[:win_rate_a]
+      if a_wins_median?(results)
+        Copy.new
+          .plain("The single stock wins the typical future and leads in ").growth("#{win}%")
+          .plain(" — but the worst outcomes are ").cash("brutal")
+          .plain(".")
+      else
+        Copy.new
+          .plain("Diversifying wins the typical future here — the single stock noses ahead in only ")
+          .cash("#{win}%").plain(" of futures.")
+      end
+    end
+
+    def stocks_vs_balanced(results)
+      win = results[:win_rate_a]
+      if !a_wins_median?(results)
+        Copy.new
+          .plain("The balanced mix wins the typical future here — all-stocks leads in only ")
+          .cash("#{win}%").plain(" of futures.")
+      elsif win >= COIN_FLIP_LOW
+        Copy.new
+          .plain("Over the long run, going all-in on stocks wins ").growth("#{win}%")
+          .plain(" of futures — by a wide margin.")
+      else
+        Copy.new
+          .plain("All-stocks and the balanced mix finish close — all-in noses ahead in just ")
+          .neutral("#{win}%").plain(" of futures.")
+      end
+    end
+
+    def invest_vs_deposit(results)
+      win = results[:win_rate_a]
+      if a_wins_median?(results)
+        Copy.new
+          .plain("Investing first ends ahead in ").growth("#{win}%")
+          .plain(" of futures — but the worst ").cash("#{100 - win}%")
+          .plain(" could push your house back.")
+      else
+        Copy.new
+          .plain("Buying now is the safer call — investing first only gets ahead in ")
           .growth("#{win}%").plain(" of futures.")
       end
     end
