@@ -71,4 +71,24 @@ class DecisionFlowTest < ActionDispatch::IntegrationTest
     assert_not_nil fresh
     refute_equal slug, fresh.slug
   end
+
+  # The special-behavior scenarios run the full flow to a rendered result page.
+  test "the DCA and debt-adjusted scenarios run end-to-end to a result" do
+    %w[lump-vs-dca invest-vs-debt].each do |slug|
+      scenario = Scenario.find_by!(slug: slug)
+
+      post scenario_comparisons_path(scenario),
+        params: { amount: scenario.default_amount, horizon: scenario.default_horizon_years }
+      assert_response :see_other
+      comparison = Comparison.find_by!(scenario: scenario)
+
+      follow_redirect!
+      assert_response :success
+      results = comparison.results
+      # Headline renders (no missing branch) and both medians are present.
+      assert_select "h1", text: /futures/i
+      assert_match money(results[:median_a], scenario.currency), response.body
+      assert_match money(results[:median_b], scenario.currency), response.body
+    end
+  end
 end
