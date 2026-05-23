@@ -38,6 +38,11 @@ class DecisionFlowTest < ActionDispatch::IntegrationTest
     assert_match comparison.data_as_of.to_fs(:long), response.body
   end
 
+  test "the layout footer disclaimer shows on every page" do
+    get root_path
+    assert_select "footer", text: /not financial advice/i
+  end
+
   test "invalid amount re-renders setup unprocessable" do
     post scenario_comparisons_path(@scenario), params: { amount: 10, horizon: 5 }
     assert_response :unprocessable_entity

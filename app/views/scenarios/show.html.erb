@@ -2,43 +2,56 @@
 <% path_a = @scenario.path_a %>
 <% path_b = @scenario.path_b %>
 
-<%= link_to "← Back", root_path %>
+<%= link_to "← Back", root_path, class: "eyebrow hover:text-ink transition-colors" %>
 
-<h1><%= @scenario.title %></h1>
+<header class="flex flex-col gap-2">
+  <span class="eyebrow">Step 2 of 2 · Review</span>
+  <h1 class="font-display text-2xl leading-tight tracking-tight"><%= @scenario.setup_title %></h1>
+</header>
 
 <% if flash.now[:alert] %>
-  <p role="alert"><%= flash.now[:alert] %></p>
+  <p role="alert" class="rounded-xl border border-cash bg-cash-soft/40 px-4 py-3 text-sm text-cash"><%= flash.now[:alert] %></p>
 <% end %>
 
-<%= form_with url: scenario_comparisons_path(@scenario), method: :post do |form| %>
-  <div>
-    <%= form.label :amount, "Amount in play (#{@scenario.currency})" %>
-    <%= form.number_field :amount, value: @scenario.default_amount, min: 1_000, max: 10_000_000, required: true %>
+<%= form_with url: scenario_comparisons_path(@scenario), method: :post, class: "flex flex-col gap-6" do |form| %>
+  <div class="flex flex-col gap-2">
+    <%= form.label :amount, "Amount in play (#{@scenario.currency})", class: "eyebrow" %>
+    <div class="rounded-xl border border-rule bg-paper-2 px-3.5 py-3">
+      <%= form.number_field :amount, value: @scenario.default_amount, min: 1_000, max: 10_000_000, required: true,
+            class: "w-full bg-transparent font-display text-2xl text-ink focus:outline-none" %>
+    </div>
   </div>
 
-  <fieldset>
-    <legend>The two paths</legend>
-    <div>
-      <span>Path A</span>
-      <strong><%= path_a.label %></strong>
-      <span><%= path_a.meta %></span>
-    </div>
-    <div>
-      <span>Path B</span>
-      <strong><%= path_b.label %></strong>
-      <span><%= path_b.meta %></span>
+  <fieldset class="flex flex-col gap-2">
+    <legend class="eyebrow mb-2">The two paths</legend>
+    <div class="grid grid-cols-2 gap-2">
+      <div class="scen-card scen-card-a flex flex-col gap-1">
+        <span class="font-mono text-[9px] uppercase tracking-[0.18em] text-growth">Path A</span>
+        <strong class="font-display text-lg font-normal leading-tight"><%= path_a.label %></strong>
+        <span class="font-mono text-[11px] text-ink-3"><%= path_a.meta %></span>
+      </div>
+      <div class="scen-card scen-card-b flex flex-col gap-1">
+        <span class="font-mono text-[9px] uppercase tracking-[0.18em] text-cash">Path B</span>
+        <strong class="font-display text-lg font-normal leading-tight"><%= path_b.label %></strong>
+        <span class="font-mono text-[11px] text-ink-3"><%= path_b.meta %></span>
+      </div>
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Time horizon</legend>
-    <% @horizons.each do |years| %>
-      <label>
-        <%= form.radio_button :horizon, years, checked: years == @scenario.default_horizon_years %>
-        <%= pluralize(years, "year") %>
-      </label>
-    <% end %>
+  <fieldset class="flex flex-col gap-2">
+    <legend class="eyebrow mb-2">Time horizon</legend>
+    <div class="flex flex-wrap gap-2">
+      <% @horizons.each do |years| %>
+        <label class="horizon-pill">
+          <%= form.radio_button :horizon, years, checked: years == @scenario.default_horizon_years, class: "sr-only" %>
+          <%= pluralize(years, "year") %>
+        </label>
+      <% end %>
+    </div>
   </fieldset>
 
-  <%= form.submit "Run the simulation" %>
+  <%= form.button type: :submit, class: "btn-primary" do %>
+    Run the simulation
+    <span class="font-display italic text-xl">↗</span>
+  <% end %>
 <% end %>

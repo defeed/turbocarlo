@@ -1,26 +1,31 @@
 <% content_for :title, @scenario.title %>
 <% currency = @scenario.currency %>
 
-<p><%= eyebrow(currency, @comparison.amount, @comparison.horizon_years) %></p>
+<header class="flex flex-col gap-2">
+  <span class="eyebrow"><%= eyebrow(currency, @comparison.amount, @comparison.horizon_years) %></span>
+  <h1 class="font-display text-2xl leading-tight tracking-tight"><%= Monte::Headline.call(@scenario, @results) %></h1>
+</header>
 
-<h1><%= Monte::Headline.call(@scenario, @results) %></h1>
+<%# Placeholder for the fan-of-futures chart (#4). Reserves the slot so the layout
+    matches the prototype before the canvas lands. %>
+<div class="flex flex-col gap-2">
+  <div class="grid aspect-[2/1] place-items-center rounded-xl border border-dashed border-rule-strong bg-paper-2/60">
+    <span class="eyebrow text-ink-4">Chart coming soon</span>
+  </div>
+  <div class="flex justify-between font-mono text-[9px] text-ink-3">
+    <span>Now</span>
+    <span>Year <%= @comparison.horizon_years %></span>
+  </div>
+</div>
 
-<section>
-  <h2><%= @scenario.path_a.label %></h2>
-  <p>Median: <%= money(@results[:median_a], currency) %></p>
-  <p>Range (p5–p95): <%= money(@results[:p5_a], currency) %> – <%= money(@results[:p95_a], currency) %></p>
-</section>
+<%= render "distribution_bars", results: @results, currency: currency, scenario: @scenario %>
 
-<section>
-  <h2><%= @scenario.path_b.label %></h2>
-  <p>Median: <%= money(@results[:median_b], currency) %></p>
-  <p>Range (p5–p95): <%= money(@results[:p5_b], currency) %> – <%= money(@results[:p95_b], currency) %></p>
-</section>
+<p class="font-mono text-[10px] leading-relaxed text-ink-3">
+  Illustrative simulation, not financial advice — based on historical data as of
+  <%= @comparison.data_as_of.to_fs(:long) %>.
+</p>
 
-<p>Illustrative simulation, not financial advice — based on historical data as of
-   <%= @comparison.data_as_of.to_fs(:long) %>.</p>
-
-<nav>
-  <%= link_to "Tweak", scenario_path(@scenario) %>
-  <%= link_to "Another", root_path %>
+<nav class="mt-auto flex gap-1.5 pt-2">
+  <%= link_to "Tweak", scenario_path(@scenario), class: "btn-secondary" %>
+  <%= link_to "Another", root_path, class: "btn-secondary" %>
 </nav>

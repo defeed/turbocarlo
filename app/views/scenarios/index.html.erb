@@ -1,15 +1,28 @@
 <% content_for :title, "Decision Lab" %>
 
-<h1>Decision Lab</h1>
-<p>Pick a financial decision. We run the futures and hand back one sharp result.</p>
+<header class="flex flex-col gap-3">
+  <span class="eyebrow">What are you weighing?</span>
+  <h1 class="font-display text-3xl leading-tight tracking-tight">
+    <em class="text-growth italic">Should I…</em>
+  </h1>
+</header>
 
-<ul>
+<div class="flex items-center gap-3 text-ink-4">
+  <span class="h-px flex-1 bg-rule"></span>
+  <span class="eyebrow">Try one</span>
+  <span class="h-px flex-1 bg-rule"></span>
+</div>
+
+<ul class="flex flex-col gap-2.5">
   <% @scenarios.each do |scenario| %>
     <li>
-      <%= link_to scenario_path(scenario) do %>
-        <span><%= scenario.chip_icon %></span>
-        <strong><%= scenario.title %></strong>
-        <span><%= scenario.chip_meta %></span>
+      <%= link_to scenario_path(scenario), class: "chip" do %>
+        <span class="chip-icon"><%= scenario.chip_icon %></span>
+        <span class="flex flex-col gap-0.5 min-w-0">
+          <strong class="font-medium text-ink truncate"><%= scenario.title %></strong>
+          <span class="font-mono text-[11px] text-ink-3 truncate"><%= scenario.chip_meta %></span>
+        </span>
+        <span class="ml-auto font-display italic text-lg text-ink-3">→</span>
       <% end %>
     </li>
   <% end %>

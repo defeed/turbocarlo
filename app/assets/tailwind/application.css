@@ -1,1 +1,150 @@
 @import "tailwindcss";
+
+/* Decision Lab design tokens — translated from the prototype's :root.
+   Path A is the growth/active side (green), Path B the stable/conservative
+   side (cash/orange). See decision-lab-interactive.html for the source. */
+@theme {
+  --color-canvas: #ebe7dc;
+  --color-paper: #f7f4ea;
+  --color-paper-2: #fbf9f1;
+
+  --color-ink: #18211c;
+  --color-ink-2: #3a4540;
+  --color-ink-3: #7a7568;
+  --color-ink-4: #a39d8e;
+
+  --color-growth: #2d5a3d;
+  --color-growth-soft: #c8d8ce;
+  --color-cash: #b8612e;
+  --color-cash-soft: #ebcdb7;
+  --color-accent: #d4a73d;
+  --color-neutral: #6b6a4d;
+
+  --color-rule: #e0dccd;
+  --color-rule-strong: #c8c2af;
+
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Warm radial wash behind every screen, lifted from the prototype body. */
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(216, 198, 152, 0.25), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(200, 184, 152, 0.2), transparent 50%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  /* Mono uppercase tracked label used as a section eyebrow throughout. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Entry-screen scenario chip: icon tile + title + meta + arrow. */
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--color-paper-2);
+    border: 1px solid var(--color-rule);
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .chip:hover {
+    border-color: var(--color-growth);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -4px rgba(45, 90, 61, 0.15);
+  }
+  .chip-icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    color: var(--color-growth);
+    background: var(--color-growth-soft);
+  }
+
+  /* Locked path cards on the Setup screen. */
+  .scen-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .scen-card-a {
+    border: 1px solid var(--color-growth);
+    background: linear-gradient(180deg, rgba(45, 90, 61, 0.04), transparent);
+  }
+  .scen-card-b {
+    border: 1px solid var(--color-cash);
+    background: linear-gradient(180deg, rgba(184, 97, 46, 0.04), transparent);
+  }
+
+  /* Horizon selector: a radio whose label reads as a pill; checked = inked. */
+  .horizon-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--color-rule);
+    background: var(--color-paper-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink);
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+  .horizon-pill:hover {
+    border-color: var(--color-ink-3);
+  }
+  .horizon-pill:has(:checked) {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper-2);
+  }
+
+  /* Primary dark CTA ("Run the simulation"). */
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--color-ink);
+    color: var(--color-paper-2);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Result action-row buttons. */
+  .btn-secondary {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--color-paper-2);
+    border: 1px solid var(--color-rule-strong);
+    color: var(--color-ink);
+    font-weight: 600;
+    font-size: 12px;
+    transition: transform 0.18s ease;
+  }
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+  }
+}
