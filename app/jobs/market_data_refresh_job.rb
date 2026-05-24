@@ -23,6 +23,9 @@ class MarketDataRefreshJob < ApplicationJob
       rescue MarketData::AlphaVantageClient::Error => e # ResponseError & friends: log, move on
         log!(asset, :error, detail: e.message)
       end
+      # Ingest→recompute pipeline: only reached when the loop completed without
+      # deferring, so we never recompute on a half-spent daily quota.
+      RecomputeParametersJob.perform_later
     end
   end
 

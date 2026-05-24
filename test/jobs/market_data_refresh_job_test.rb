@@ -1,6 +1,8 @@
 require "test_helper"
 
 class MarketDataRefreshJobTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   RateLimitError = MarketData::AlphaVantageClient::RateLimitError
   ResponseError  = MarketData::AlphaVantageClient::ResponseError
 
@@ -102,5 +104,15 @@ class MarketDataRefreshJobTest < ActiveSupport::TestCase
 
     assert_equal 4 * 60, PriceObservation.count
     assert_equal 8, MarketDataFetch.success.count
+  end
+
+  test "a completed refresh chains the parameter recompute" do
+    assert_enqueued_with(job: RecomputeParametersJob) { run_job(valid_script) }
+  end
+
+  test "a deferred refresh does not enqueue the recompute" do
+    assert_no_enqueued_jobs(only: RecomputeParametersJob) do
+      run_job(valid_script("SPY" => [ RateLimitError ]))
+    end
   end
 end
