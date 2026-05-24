@@ -10,16 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_23_093610) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_24_000003) do
   create_table "assets", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "data_source", default: 1, null: false
     t.string "display_meta"
     t.string "display_name", null: false
     t.float "mu", null: false
     t.float "sigma", null: false
     t.string "slug", null: false
+    t.string "symbol"
     t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_assets_on_slug", unique: true
+    t.index ["symbol"], name: "index_assets_on_symbol", unique: true
   end
 
   create_table "comparisons", force: :cascade do |t|
@@ -40,6 +43,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_23_093610) do
     t.index ["dedup_key"], name: "index_comparisons_on_dedup_key", unique: true
     t.index ["scenario_id"], name: "index_comparisons_on_scenario_id"
     t.index ["slug"], name: "index_comparisons_on_slug", unique: true
+  end
+
+  create_table "market_data_fetches", force: :cascade do |t|
+    t.integer "asset_id", null: false
+    t.datetime "created_at", null: false
+    t.string "detail"
+    t.integer "observations_count"
+    t.integer "status", null: false
+    t.datetime "updated_at", null: false
+    t.index ["asset_id"], name: "index_market_data_fetches_on_asset_id"
+  end
+
+  create_table "price_observations", force: :cascade do |t|
+    t.integer "asset_id", null: false
+    t.float "close", null: false
+    t.datetime "created_at", null: false
+    t.date "observed_on", null: false
+    t.datetime "updated_at", null: false
+    t.index ["asset_id", "observed_on"], name: "index_price_observations_on_asset_id_and_observed_on", unique: true
+    t.index ["asset_id"], name: "index_price_observations_on_asset_id"
   end
 
   create_table "scenario_paths", force: :cascade do |t|
@@ -75,6 +98,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_23_093610) do
   end
 
   add_foreign_key "comparisons", "scenarios"
+  add_foreign_key "market_data_fetches", "assets"
+  add_foreign_key "price_observations", "assets"
   add_foreign_key "scenario_paths", "assets"
   add_foreign_key "scenario_paths", "scenarios"
 end
