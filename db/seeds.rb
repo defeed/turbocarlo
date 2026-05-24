@@ -8,7 +8,12 @@ sp500 = Asset.find_or_create_by!(slug: "sp500") do |a|
   a.display_meta = "US large-cap equity index"
   a.mu = 0.08
   a.sigma = 0.16
+  a.data_source = :alpha_vantage
+  a.symbol = "SPY"
 end
+# Backfill the market-data mapping (#10) on environments seeded before it landed;
+# the create block above runs only on insert.
+sp500.update!(data_source: :alpha_vantage, symbol: "SPY") unless sp500.alpha_vantage?
 
 hysa = Asset.find_or_create_by!(slug: "hysa") do |a|
   a.display_name = "High-yield savings"
@@ -131,21 +136,42 @@ nvda = Asset.find_or_create_by!(slug: "nvda") do |a|
   a.display_meta = "Single tech stock"
   a.mu = 0.15
   a.sigma = 0.45
+  a.data_source = :alpha_vantage
+  a.symbol = "NVDA"
 end
+nvda.update!(data_source: :alpha_vantage, symbol: "NVDA") unless nvda.alpha_vantage?
 
 world_index = Asset.find_or_create_by!(slug: "world-index") do |a|
   a.display_name = "World stock index"
   a.display_meta = "Diversified equity index"
   a.mu = 0.075
   a.sigma = 0.16
+  a.data_source = :alpha_vantage
+  a.symbol = "VT"
 end
+world_index.update!(data_source: :alpha_vantage, symbol: "VT") unless world_index.alpha_vantage?
+
+# Aggregate bond index. Not user-facing (no ScenarioPath references it) — it
+# exists to carry AGG price history so #12 can derive the 60/40 portfolio's μ/σ
+# from real SPY/AGG returns. Fallback μ/σ until that recompute lands.
+us_bonds = Asset.find_or_create_by!(slug: "us-bonds") do |a|
+  a.display_name = "US bonds"
+  a.display_meta = "Aggregate bond index (history for the 60/40 derivation, #12)"
+  a.mu = 0.03
+  a.sigma = 0.05
+  a.data_source = :alpha_vantage
+  a.symbol = "AGG"
+end
+us_bonds.update!(data_source: :alpha_vantage, symbol: "AGG") unless us_bonds.alpha_vantage?
 
 balanced = Asset.find_or_create_by!(slug: "balanced-60-40") do |a|
   a.display_name = "60/40 portfolio"
   a.display_meta = "Stocks + bonds (fallback; derived in #12)"
   a.mu = 0.065
   a.sigma = 0.10
+  a.data_source = :derived
 end
+balanced.update!(data_source: :derived) unless balanced.derived?
 
 property = Asset.find_or_create_by!(slug: "property-deposit") do |a|
   a.display_name = "Property purchase"
